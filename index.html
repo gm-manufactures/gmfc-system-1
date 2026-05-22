@@ -290,8 +290,10 @@
     </footer>
     <div id="toast" class="toast"></div>
     <script>
-        // ✅ FIXED: Automatically uses your Render URL
+        // Use the current domain automatically
         const API_BASE = window.location.origin + '/api';
+        
+        console.log('API_BASE:', API_BASE);
         
         function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
@@ -302,38 +304,63 @@
         
         async function loadCompanyProfile() {
             try {
+                console.log('Fetching profile from:', `${API_BASE}/profile`);
                 const response = await fetch(`${API_BASE}/profile`);
-                if (!response.ok) throw new Error('Network response was not ok');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('Profile data received:', data);
+                
                 document.getElementById('comp-name').innerText = data.currentName || 'GMFC';
                 document.getElementById('comp-license').innerText = data.legalRegistration?.investmentLicenseNo || 'GMFC/INV/2024/0123';
                 document.getElementById('comp-manager').innerText = data.generalManager || 'ኢንጂነር ሰይድ';
-                document.getElementById('hero-title').innerText = data.heroTitle || data.currentName;
-                document.getElementById('hero-subtitle').innerText = data.heroSubtitle || '';
+                document.getElementById('hero-title').innerText = data.heroTitle || data.currentName || 'የጋምቤላ ማጃንግ የጫካ ቡና አምራችና ኤክስፖርተር';
+                document.getElementById('hero-subtitle').innerText = data.heroSubtitle || 'ከማጃንግ ጥቅጥቅ ያሉ ደኖች፣ ሜጢ ከተማ - ለዓለም ገበያ የሚቀርብ ንጹህ የኢትዮጵያ የጫካ ቡና!';
+                
             } catch (err) {
-                console.error('Error:', err);
+                console.error('Error loading profile:', err);
                 showToast('ውሂብ መጫን አልተቻለም', true);
             }
         }
         
         async function loadNews() {
             try {
+                console.log('Fetching news from:', `${API_BASE}/news`);
                 const response = await fetch(`${API_BASE}/news`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('News data received:', data);
+                
                 const newsBox = document.getElementById('news-box');
                 newsBox.innerHTML = '';
+                
                 if (data.length === 0) {
                     newsBox.innerHTML = '<p style="text-align: center; width: 100%;">ምንም ዜና የለም</p>';
                 } else {
                     data.forEach(item => {
-                        newsBox.innerHTML += `<div class="news-card"><div class="date">${item.year}</div><h4>${item.title}</h4><p>${item.description}</p></div>`;
+                        newsBox.innerHTML += `
+                            <div class="news-card">
+                                <div class="date">${item.year}</div>
+                                <h4>${item.title}</h4>
+                                <p>${item.description}</p>
+                            </div>
+                        `;
                     });
                 }
             } catch (err) {
                 console.error('Error loading news:', err);
+                showToast('ዜና መጫን አልተቻለም', true);
             }
         }
         
+        // Submit share inquiry form
         document.getElementById('share-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submit-btn');
@@ -359,30 +386,39 @@
                     showToast('ጥያቄዎ በተሳካ ሁኔታ ተልኳል! እናመሰግናለን።');
                     document.getElementById('share-form').reset();
                 } else {
+                    const error = await response.text();
+                    console.error('Server error:', error);
                     showToast('ይቅርታ፣ መላክ አልተቻለም።', true);
                 }
             } catch (err) {
+                console.error('Error:', err);
                 showToast('ከሰርቨሩ ጋር መገናኘት አልተቻለም።', true);
             }
             submitBtn.disabled = false;
             submitBtn.textContent = 'ጥያቄዬን ላክ / Submit Inquiry';
         });
         
+        // Contact form
         document.getElementById('contact-form').addEventListener('submit', (e) => {
             e.preventDefault();
             showToast('መልእክትዎ ተልኳል! በቅርብ ጊዜ ምላሽ እንሰጣለን።');
             e.target.reset();
         });
         
+        // Smooth scrolling
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
-                if (target) target.scrollIntoView({ behavior: 'smooth' });
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
             });
         });
         
+        // Load data when page loads
         window.onload = () => {
+            console.log('Page loaded, starting to fetch data...');
             loadCompanyProfile();
             loadNews();
         };
